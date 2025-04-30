@@ -1,0 +1,22 @@
+/root folder
+
+--/controllers
+    file_controller.go
+    auth_controller.go
+
+--/models
+    file.go
+    user.go
+
+--/services
+    storage.go
+
+--/routes
+   routes.go
+
+--/ middleware
+     auth_middleware.go
+--/database
+     database.go
+
+--main.go
