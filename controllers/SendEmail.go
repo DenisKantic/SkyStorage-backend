@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/smtp"
 	"os"
@@ -12,6 +13,7 @@ func SendEmail(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&email); err != nil {
 		c.JSON(400, gin.H{"error": "Some fields are missing"})
+		fmt.Println(err.Error())
 		return
 	}
 
@@ -22,9 +24,10 @@ func SendEmail(c *gin.Context) {
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
 
-	msg := []byte("To: " + email.To + "\r\n" +
+	msg := []byte("From: \"" + "Denis Kantic" + "\" <" + smtpUser + ">\r\n" +
+		"To: \"" + email.To + "\"\r\n" +
 		"Subject: " + email.Subject + "\r\n" +
-		"Content-Type: text/plain, charset=\"UTF-8\"" + "\r\n" +
+		"Content-Type: text/plain; charset=\"UTF-8\"\r\n" +
 		"\r\n" +
 		email.Body + "\r\n")
 
