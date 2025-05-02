@@ -3,9 +3,11 @@ package controllers
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"html"
 	"net/smtp"
 	"os"
 	"sky_storage_golang/models"
+	"time"
 )
 
 func SendEmail(c *gin.Context) {
@@ -24,12 +26,37 @@ func SendEmail(c *gin.Context) {
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
 
-	msg := []byte("From: \"" + "Denis Kantic" + "\" <" + smtpUser + ">\r\n" +
-		"To: \"" + email.To + "\"\r\n" +
+	date := time.Now().Format(time.RFC1123Z)
+	messageID := fmt.Sprintf("%d@vortexdigitalsystems.com", time.Now().UnixNano())
+
+	// HTML content with footer
+	htmlBody := fmt.Sprintf(`
+		<!DOCTYPE html>
+		<html>
+		<body style="font-family: sans-serif; color: #333;">
+			<div>
+				<pre style="white-space: pre-wrap; font-family: inherit; font-size: 14px;">%s</pre>
+				<hr style="border: none; border-top: 1px solid #ccc; margin-top: 30px;">
+				<p style="font-size: 12px; color: #555;">
+					<strong>Denis Kantic</strong><br>
+					Vortex Digital Systems<br>
+					Full Stack Web Developer &amp; SysAdmin <br><br>
+					Email sent: %s
+				</p>
+			</div>
+		</body>
+		</html>
+	`, html.EscapeString(email.Body), date)
+
+	msg := []byte("From: \"Denis Kantic\" <" + smtpUser + ">\r\n" +
+		"To: <" + email.To + ">\r\n" +
 		"Subject: " + email.Subject + "\r\n" +
-		"Content-Type: text/plain; charset=\"UTF-8\"\r\n" +
+		"Date: " + date + "\r\n" +
+		"Message-ID: <" + messageID + ">\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/html; charset=\"UTF-8\"\r\n" +
 		"\r\n" +
-		email.Body + "\r\n")
+		htmlBody + "\r\n")
 
 	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, smtpUser, []string{email.To}, msg)
 	if err != nil {
