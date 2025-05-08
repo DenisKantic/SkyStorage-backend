@@ -5,8 +5,9 @@ import (
 	"sky_storage_golang/controllers"
 )
 
-func SendEmail(r *gin.Engine) {
+func EmailRoutes(r *gin.Engine) {
 	emailGroup := r.Group("/email")
 
 	emailGroup.POST("/send-email", controllers.SendEmail)
+	emailGroup.GET("/sent-emails", controllers.ServeSentEmails)
 }

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"html"
+	"net/http"
 	"net/smtp"
 	"os"
+	"sky_storage_golang/database"
 	"sky_storage_golang/models"
 	"time"
 )
@@ -64,5 +66,25 @@ func SendEmail(c *gin.Context) {
 		return
 	}
 
+	email.SentAt = time.Now() // getting the time for this email when sent
+
+	// save sent email to DB
+	if err := database.DB.Create(&email).Error; err != nil {
+		c.JSON(500, gin.H{"error": "Failed to save email"})
+		return
+	}
 	c.JSON(200, gin.H{"success": "Email sent successfully"})
+}
+
+func ServeSentEmails(c *gin.Context) {
+	var emails []models.Email
+
+	fmt.Println("ServeSentEmails triggered") // Debug line
+
+	if err := database.DB.Order("sent_at DESC").Find(&emails).Error; err != nil {
+		c.JSON(500, gin.H{"error": "Failed to read sent emails"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"emails": emails})
 }
