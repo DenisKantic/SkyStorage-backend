@@ -32,6 +32,31 @@ func ConnectDB() {
 	if err != nil {
 		log.Fatal("Failed to migrate table:", err)
 	}
+	//Create a default dev user if not exists
+	//var devUser models.User
+	//result := DB.First(&devUser, "username = ?", "devadmin")
+	//if result.Error != nil {
+	//	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	//		hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte("devpass123"), bcrypt.DefaultCost)
+	//		if hashErr != nil {
+	//			log.Fatalf("Failed to hash password: %v", hashErr)
+	//		}
+	//
+	//		// Hash password before saving in real-world apps!
+	//		defaultUser := models.User{
+	//			Username: "denis",
+	//			Password: string(hashedPassword), // ⚠️ In production, hash this!
+	//			Email:    "denis.kantic18@gmail.com",
+	//		}
+	//		if err := DB.Create(&defaultUser).Error; err != nil {
+	//			log.Fatalf("Failed to create default user: %v", err)
+	//		} else {
+	//			log.Println("Default dev user created")
+	//		}
+	//	} else {
+	//		log.Fatalf("Error checking for default user: %v", result.Error)
+	//	}
+	//}
 
 	log.Println("Migration completed")
 }

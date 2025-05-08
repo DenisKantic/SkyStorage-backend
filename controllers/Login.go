@@ -31,6 +31,7 @@ func Login(c *gin.Context) {
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid password"})
+		fmt.Println(err.Error())
 		return
 	}
 
@@ -41,7 +42,6 @@ func Login(c *gin.Context) {
 	}
 
 	c.SetCookie("auth_token", token, 60*60*24, "/", "localhost", false, false)
-	c.Header("Set-Cookie", "auth_token="+token+"; Max-Age=86400; Path=/; Domain=localhost; SameSite=Strict; HttpOnly")
 	c.JSON(http.StatusOK, gin.H{"success": "Logged in"})
 }
 
