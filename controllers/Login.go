@@ -23,7 +23,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var user models.UserEmployee
+	var user models.User
 	if err := database.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 		return
@@ -31,17 +31,17 @@ func Login(c *gin.Context) {
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid password"})
+		fmt.Println(err.Error())
 		return
 	}
 
-	token, err := utils.GenerateJWT(user.ID, user.Role)
+	token, err := utils.GenerateJWT(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to login"})
 		return
 	}
 
 	c.SetCookie("auth_token", token, 60*60*24, "/", "localhost", false, false)
-	c.Header("Set-Cookie", "auth_token="+token+"; Max-Age=86400; Path=/; Domain=localhost; SameSite=Strict; HttpOnly")
 	c.JSON(http.StatusOK, gin.H{"success": "Logged in"})
 }
 
