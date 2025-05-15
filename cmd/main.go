@@ -29,6 +29,7 @@ func main() {
 	routes.AuthRoutes(r)
 	routes.LogoutRoute(r)
 	routes.EmailRoutes(r)
+	routes.UploadRoute(r)
 
 	err := r.Run(":8080")
 	if err != nil {

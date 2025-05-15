@@ -8,5 +8,5 @@ type File struct {
 	FileSize int       `gorm:"not null" json:"file_size"`
 	MimeType string    `gorm:"not null" json:"mime_type"`
 	UploadAt time.Time `gorm:"autoCreateTime" json:"upload_at"`
-	OwnerID  uint      `gorm:"not null" json:"owner_id"`
+	Path     string    `gorm:"not null" json:"path"`
 }
