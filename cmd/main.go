@@ -31,6 +31,9 @@ func main() {
 	routes.EmailRoutes(r)
 	routes.UploadRoute(r)
 
+	// SERVING FOLDER
+	r.Static("/uploads", "./uploads")
+
 	err := r.Run(":8080")
 	if err != nil {
 		fmt.Println("Error starting at 8080 port")
