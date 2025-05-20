@@ -29,26 +29,28 @@ func UploadFiles(c *gin.Context) {
 	var savedFiles []models.File
 
 	for _, file := range files {
-		// Generate a unique filename
-		filename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
+		originalFileName := file.Filename
 
-		// Relative path for saving to disk
-		relativePath := filepath.Join("uploads", filename)
-		// Absolute path for saving the file physically
-		dstPath := filepath.Join(".", relativePath)
+		// Check if file with same name already exists in DB
+		var existing models.File
+		if err := database.DB.Where("file_name = ?", originalFileName).First(&existing).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": fmt.Sprintf("File '%s' already exists", originalFileName)})
+			return
+		}
+
+		dstPath := filepath.Join(uploadDir, originalFileName)
 
 		if err := c.SaveUploadedFile(file, dstPath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 			return
 		}
 
-		// Store only the relative path in the database
 		fileModel := models.File{
-			FileName: file.Filename,
+			FileName: originalFileName,
 			FileSize: int(file.Size),
 			MimeType: file.Header.Get("Content-Type"),
 			UploadAt: time.Now(),
-			Path:     relativePath, // store only "uploads/filename"
+			Path:     originalFileName, // only the filename
 		}
 
 		if err := database.DB.Create(&fileModel).Error; err != nil {
@@ -59,7 +61,10 @@ func UploadFiles(c *gin.Context) {
 		savedFiles = append(savedFiles, fileModel)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": "Files uploaded successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"success": "Files uploaded successfully",
+		"files":   savedFiles,
+	})
 }
 func GetAllFiles(c *gin.Context) {
 	var files []models.File
@@ -95,6 +100,40 @@ func GetUploadsFolderSize(c *gin.Context) {
 		"size_bytes": totalSize,
 		"size_human": formatBytesInGB(totalSize),
 	})
+}
+func DeleteFile(c *gin.Context) {
+	var input struct {
+		FileName string `json:"filename"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil || input.FileName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid filename"})
+		return
+	}
+
+	// Check if the file exists in DB
+	var file models.File
+	if err := database.DB.Where("file_name = ?", input.FileName).First(&file).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found in database"})
+		return
+	}
+
+	// Build the full file path
+	filePath := filepath.Join("./uploads", file.FileName)
+
+	// Try to delete the physical file
+	if err := os.Remove(filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file from disk"})
+		return
+	}
+
+	// Delete DB record
+	if err := database.DB.Delete(&file).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file record from database"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "File deleted successfully"})
 }
 
 // formatBytes converts bytes to a human-readable string (e.g., MB, GB)

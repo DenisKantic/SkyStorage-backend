@@ -13,4 +13,5 @@ func UploadRoute(r *gin.Engine) {
 	// get all files
 	filesRoute.GET("/all-uploads", controllers.GetAllFiles)
 	filesRoute.GET("/total-size", controllers.GetUploadsFolderSize)
+	filesRoute.POST("/delete-file", controllers.DeleteFile)
 }
