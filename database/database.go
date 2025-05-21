@@ -1,7 +1,9 @@
 package database
 
 import (
+	"context"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
@@ -9,7 +11,28 @@ import (
 	"sky_storage_golang/models"
 )
 
-var DB *gorm.DB
+// redis and postgres
+var (
+	DB          *gorm.DB
+	RedisClient *redis.Client
+	Ctx         = context.Background()
+)
+
+func ConnectRedis() {
+	RedisClient = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),     // e.g. "localhost:6379"
+		Password: os.Getenv("REDIS_PASSWORD"), // empty if no password
+		DB:       0,                           // default DB
+	})
+
+	// Test connection
+	_, err := RedisClient.Ping(Ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	log.Println("Connected to Redis")
+}
 
 func ConnectDB() {
 	// Use environment variables for security
@@ -28,7 +51,7 @@ func ConnectDB() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{}, &models.Email{}, &models.File{})
+	err = DB.AutoMigrate(&models.User{}, &models.Email{}, &models.File{}, &models.LoginVerification{})
 	if err != nil {
 		log.Fatal("Failed to migrate table:", err)
 	}
@@ -59,4 +82,6 @@ func ConnectDB() {
 	//}
 
 	log.Println("Migration completed")
+
+	ConnectRedis()
 }

@@ -88,3 +88,27 @@ func ServeSentEmails(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"emails": emails})
 }
+
+func SendLoginCode(to, subject, body string) error {
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpUser := os.Getenv("SMTP_USER")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+
+	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+
+	date := time.Now().Format(time.RFC1123Z)
+	messageID := fmt.Sprintf("%d@vortexdigitalsystems.com", time.Now().UnixNano())
+
+	msg := []byte("From: " + smtpUser + "\r\n" +
+		"To: " + to + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"Date: " + date + "\r\n" +
+		"Message-ID: <" + messageID + ">\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=\"UTF-8\"\r\n" +
+		"\r\n" +
+		body + "\r\n")
+
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, smtpUser, []string{to}, msg)
+}
