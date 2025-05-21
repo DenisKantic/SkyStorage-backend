@@ -23,6 +23,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  redis:
+    image: redis:7
+    container_name: redis_storage
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 volumes:
   sky_volume:
     external: true

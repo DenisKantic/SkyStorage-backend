@@ -1,8 +1,11 @@
 package controllers
 
+import "C"
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -61,19 +64,50 @@ func UploadFiles(c *gin.Context) {
 		savedFiles = append(savedFiles, fileModel)
 	}
 
+	// invalidating cache key after saving in DB
+	err = database.RedisClient.Del(database.Ctx, "all_files").Err()
+	if err != nil {
+		log.Println("Failed to invalidate cache key", err)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": "Files uploaded successfully",
 		"files":   savedFiles,
 	})
 }
 func GetAllFiles(c *gin.Context) {
-	var files []models.File
+	cacheKey := "all_files"
 
+	cached, err := database.RedisClient.Get(database.Ctx, cacheKey).Result()
+	if err == nil {
+		log.Println("Serving files from Redis cache")
+		// cache hit, return cached JSON directly
+		var files []models.File
+		if err := json.Unmarshal([]byte(cached), &files); err == nil {
+			// succesfully unmarshaled from cache, return cached response
+			c.JSON(http.StatusOK, gin.H{"files": files})
+			return
+		}
+		// if unmarshal fails, continue to fetch fresh data
+	}
+
+	// cache miss or unmarshal error, fetch from DB
+	log.Println("Fetching files from database")
+
+	var files []models.File
 	if err := database.DB.Find(&files).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get the files"})
 		return
 	}
 
+	// marshal files to JSON to cache
+	jsonBytes, err := json.Marshal(files)
+	if err == nil {
+		// cache the results for 10 minutes
+		database.RedisClient.Set(database.Ctx, cacheKey, jsonBytes, 10*time.Minute)
+	}
+
+	// return response
 	c.JSON(http.StatusOK, gin.H{"files": files})
 }
 func GetUploadsFolderSize(c *gin.Context) {
